@@ -59,7 +59,7 @@ class ReviewCounter(models.Model):
 product = Product.objects.first()
 product.recompi_track(
     "product-view",
-    ["user_profile_id"],
+    SecureProfile("profile_id", "user_profile_id"),
     "https://www.example.com/products/1",
 )
 ```
@@ -70,7 +70,7 @@ product.recompi_track(
 # Get product recommendations for a user
 recommendations = Product.recompi_recommend(
     "product-view",
-    profiles=["user_profile_id"],
+    profiles=SecureProfile("profile_id", "user_profile_id"),
 )
 
 # Example of printing recommendations
