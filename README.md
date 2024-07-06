@@ -1,0 +1,285 @@
+# Django RecomPI
+
+*Django RecomPI* is a Django model mixin that integrates functionalities of [RecomPI](https://www.recompi.com) (Recommender System API) with Django models, enabling easy recommendation and tracking capabilities within Django applications.
+
+## Installation
+
+You can install *Django RecomPI* via pip. Here's how:
+
+```bash
+pip install django-recompi
+```
+
+## Usage
+
+### Setting up a Django model with RecomPI integration
+
+1. **Define your Django model** (e.g., `Product`) and use `RecomPIModelMixin` as a mixin.
+
+```python
+from django.db import models
+from django_recompi.models import RecomPIModelMixin
+
+class Product(models.Model, RecomPIModelMixin):
+    RECOMPI_DATA_FIELDS = [
+        "name",
+        "reviews__comment",
+        "reviews__rating",
+        "reviews__counter.count",
+    ]
+    name = models.CharField(max_length=100, db_index=True)
+    description = models.TextField()
+
+    def __str__(self):
+        return self.name
+```
+
+2. **Define related models** such as `Review` and `ReviewCounter` with appropriate fields.
+
+```python
+from django.db import models
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, related_name="reviews", on_delete=models.CASCADE)
+    comment = models.CharField(max_length=200, db_index=True)
+    rating = models.CharField(choices=RatingChoices.choices, max_length=1, db_index=True)
+    counter = models.ForeignKey("ReviewCounter", related_name="reviews", on_delete=models.CASCADE, default=None, null=True, blank=True)
+
+    def __str__(self):
+        return f"Review of {self.product.name} - {self.rating}"
+
+class ReviewCounter(models.Model):
+    count = models.IntegerField(default=0)
+```
+
+### Tracking interactions
+
+```python
+# Track user interaction with a product
+product = Product.objects.first()
+product.recompi_track(
+    "product-view",
+    SecureProfile("profile_id", user_profile_id"),
+    Location(url="https://www.example.com/products/1"),
+)
+```
+
+### Getting recommendations
+
+```python
+# Get product recommendations for a user
+recommendations = Product.recompi_recommend(
+    "product-view",
+    SecureProfile("profile_id", user_profile_id"),
+)
+
+# Example of printing recommendations
+print([{"name": p.name, "recommedation-rank": getattr(p, 'recompi_rank', None)} for p in recommendations.get("product-view", [])])
+```
+
+## Settings Configuration
+
+*Django RecomPI* can be customized through the following settings in your `settings.py` file:
+
+### `RECOMPI_API_KEY`
+
+- **Type:** `str`
+- **Description:** API key for accessing the RecomPI service. Required for integration.
+- **Note:** To obtain RECOMPI_API_KEY, register on the [RecomPI panel](https://panel.recompi.com/clients/sign_in). After registration, [add a campaign](https://panel.recompi.com/campaigns/new) in the panel, and a campaign token will be generated instantly. Use this token as your API key in the code.
+
+### `RECOMPI_SECURE_API`
+
+- **Type:** `bool`
+- **Default:** `True`
+- **Description:** Flag indicating whether to use secure API connections.
+
+### `RECOMPI_SECURE_PROFILE_HASH_SALT`
+
+- **Type:** `str` or `None`
+- **Description:** Salt used to hash profile information securely.
+
+### `RECOMPI_SET_RANK_ON_RECORD`
+
+- **Type:** `bool`
+- **Default:** `True`
+- **Description:** Flag indicating whether to set the recommendation rank on records.
+
+## API Reference
+
+### `RecomPIModelMixin` Class
+
+#### Attributes
+
+- **`RECOMPI_DATA_FIELDS`**: Defines fields used by RecomPI for recommendation and tracking.
+- **`RECOMPI_NONE_SPECIAL_LITERAL`**: Special literal used when field values are None.
+
+#### Methods
+
+- **`recompi_track(label, profiles, location, geo=None) -> Any`**: Track user interaction with the system.
+- **`recompi_recommend(labels, profiles=None, geo=None, query_manager='objects', size=8, max_polling_size=None) -> Dict[str, List[Any]]`**: Recommend items based on labels and search terms.
+
+### `Product` Model
+
+#### Fields
+
+- **`name`**: Name of the product.
+- **`description`**: Description of the product.
+
+#### Methods
+
+- **`recompi_track(label, profiles, location, geo=None) -> Any`**: Track user interaction with the product.
+- **`recompi_recommend(labels, profiles=None, geo=None, query_manager='objects', size=8, max_polling_size=None) -> Dict[str, List[Any]]`**: Recommend related products based on interactions.
+
+
+Certainly! Here's an expanded version of the README.md for your *Django RecomPI* package, covering additional sections on error handling, advanced configuration, security considerations, contributing to the project, license information, support options, examples, and performance considerations:
+
+---
+
+# Django RecomPI
+
+*Django RecomPI* is a Django model mixin that integrates functionalities of RecomPI (Recommender System API) with Django models, enabling easy recommendation and tracking capabilities within Django applications.
+
+## Installation
+
+You can install *Django RecomPI* via pip. Here's how:
+
+```bash
+pip install django-recompi
+```
+
+## Usage
+
+### Setting up a Django model with RecomPI integration
+
+1. **Define your Django model** (e.g., `Product`) and use `RecomPIModelMixin` as a mixin.
+
+```python
+from django.db import models
+from django_recompi.models import RecomPIModelMixin
+
+class Product(models.Model, RecomPIModelMixin):
+    RECOMPI_DATA_FIELDS = [
+        "name",
+        "reviews__comment",
+        "reviews__rating",
+        "reviews__counter.count",
+    ]
+    name = models.CharField(max_length=100, db_index=True)
+    description = models.TextField()
+
+    def __str__(self):
+        return self.name
+```
+
+2. **Define related models** such as `Review` and `ReviewCounter` with appropriate fields.
+
+```python
+from django.db import models
+
+class Review(models.Model):
+    product = models.ForeignKey(Product, related_name="reviews", on_delete=models.CASCADE)
+    comment = models.CharField(max_length=200, db_index=True)
+    rating = models.CharField(choices=RatingChoices.choices, max_length=1, db_index=True)
+    counter = models.ForeignKey("ReviewCounter", related_name="reviews", on_delete=models.CASCADE, default=None, null=True, blank=True)
+
+    def __str__(self):
+        return f"Review of {self.product.name} - {self.rating}"
+
+class ReviewCounter(models.Model):
+    count = models.IntegerField(default=0)
+```
+
+### Tracking interactions
+
+```python
+# Track user interaction with a product
+product = Product.objects.first()
+product.recompi_track(
+    "product-view",
+    ["user_profile_id"],
+    "https://www.example.com/products/1",
+)
+```
+
+### Getting recommendations
+
+```python
+# Get product recommendations for a user
+recommendations = Product.recompi_recommend(
+    "product-view",
+    profiles=["user_profile_id"],
+)
+
+# Example of printing recommendations
+print([{"name": p.name, "recommedation-rank": getattr(p, 'recompi_rank', None)} for p in recommendations.get("product-view", [])])
+```
+
+## Settings Configuration
+
+*Django RecomPI* can be customized through the following settings in your `settings.py` file:
+
+### `RECOMPI_API_KEY`
+
+- **Type:** `str`
+- **Description:** API key for accessing the RecomPI service. Required for integration.
+
+### `RECOMPI_SECURE_API`
+
+- **Type:** `bool`
+- **Default:** `True`
+- **Description:** Flag indicating whether to use secure API connections.
+
+### `RECOMPI_SECURE_PROFILE_HASH_SALT`
+
+- **Type:** `str` or `None`
+- **Description:** Salt used to hash profile information securely. Profiles hashed with this salt before sending data to RecomPI servers using `SecureProfile`.
+
+### `RECOMPI_SET_RANK_ON_RECORD`
+
+- **Type:** `bool`
+- **Default:** `True`
+- **Description:** Flag indicating whether to set the recommendation rank on records.
+
+## Error Handling and Exceptions
+
+When using *Django RecomPI*, you may encounter the following exceptions:
+
+- **`RecomPIException`**: Raised when essential settings are not properly configured or when errors occur during API interactions. Handle these exceptions to provide appropriate feedback or logging.
+
+## Security Considerations
+
+Ensure the following security best practices when using *Django RecomPI*:
+
+- **Secure API Key Handling**: Keep `RECOMPI_API_KEY` secure and avoid exposing it in version control or public repositories.
+- **Data Encryption**: Use HTTPS (`RECOMPI_SECURE_API`) to encrypt data transmitted between your Django application and the RecomPI service.
+- **Secure Profile Hashing**: Utilize `RECOMPI_SECURE_PROFILE_HASH_SALT` to hash profile IDs before sending them to RecomPI servers. This helps protect user data by obscuring identifiable information during transmission.
+
+## Contributing and Development
+
+We welcome contributions to *Django RecomPI*! If you'd like to contribute, please follow these steps:
+
+- Fork the repository and clone it to your local environment.
+- Install dependencies and set up a development environment.
+- Make changes, write tests, and ensure all tests pass.
+- Submit a pull request with a detailed description of your changes.
+
+## License
+
+*Django RecomPI* is licensed under the MIT License. See the LICENSE file for more details.
+
+## Support
+
+For support or questions, please visit our [documentation](https://panel.recompi.com/tickets/new) or [open an issue](https://github.com/recompi/django-recompi/issues) on GitHub.
+
+## Examples and Use Cases
+
+Explore these examples to understand how *Django RecomPI* can be applied:
+
+- **E-commerce Recommendation**: Track user interactions on product pages and recommend related products based on their behavior.
+- **Content Personalization**: Customize content recommendations based on user preferences and historical interactions.
+
+## Performance Considerations
+
+To optimize performance with *Django RecomPI*:
+
+- **Caching**: Implement caching strategies to store and retrieve frequently accessed recommendation data efficiently.

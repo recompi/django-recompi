@@ -1,0 +1,52 @@
+[project]
+name = "django-recompi"
+version = "2.0.17"
+description = "Integration of RecomPI with Django models for recommendation and tracking functionalities."
+readme = "README.md"
+authors = [{ name = "RecomPI", email = "tech@recompi.com" }]
+license = "MIT"
+keywords = [
+    "django",
+    "recompi",
+    "recommendation",
+    "tracking",
+    "recommender system",
+    "machine learning",
+    "data science",
+    "web development",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: Django",
+    "Framework :: Django :: 2.2",
+    "Framework :: Django :: 3.0",
+    "Framework :: Django :: 3.1",
+    "Framework :: Django :: 3.2",
+    "Framework :: Django :: 4.0",
+    "Framework :: Django :: 5.0",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3"
+dependencies = [
+    "recompi>=2.0.17",
+    "Django>=2",
+]
+
+[project.urls]
+Source = "https://github.com/recompi/python-recompi"
+"RecomPI Package" = "https://pypi.org/project/recompi"
+"Use Cases" = "https://www.recompi.com/category/use-cases/documents-use-cases"
+"Bug Tracker" = "https://github.com/recompi/django-recompi/issues"
+Website = "https://www.recompi.com"
+Panel = "https://panel.recompi.com"
+"Wordpress Plugin" = "https://www.zhaket.com/web/recompi-plugin"
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
