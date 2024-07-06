@@ -85,6 +85,7 @@ print([{"name": p.name, "recommedation-rank": getattr(p, 'recompi_rank', None)} 
 
 - **Type:** `str`
 - **Description:** API key for accessing the RecomPI service. Required for integration.
+- **Note:** To obtain RECOMPI_API_KEY, register on the [RecomPI panel](https://panel.recompi.com/clients/sign_in). After registration, [add a campaign](https://panel.recompi.com/campaigns/new) in the panel, and a campaign token will be generated instantly. Use this token as your API key in the code.
 
 ### `RECOMPI_SECURE_API`
 
