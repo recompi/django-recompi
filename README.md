@@ -133,7 +133,7 @@ We welcome contributions to *Django RecomPI*! If you'd like to contribute, pleas
 
 ## Support
 
-For support or questions, please visit our [documentation](https://panel.recompi.com/tickets/new) or [open an issue](https://github.com/recompi/django-recompi/issues) on GitHub.
+For support or questions, please submit a [ticket](https://panel.recompi.com/tickets/new) or [open an issue](https://github.com/recompi/django-recompi/issues) on GitHub.
 
 ## Examples and Use Cases
 
