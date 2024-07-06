@@ -127,10 +127,6 @@ We welcome contributions to *Django RecomPI*! If you'd like to contribute, pleas
 - Make changes, write tests, and ensure all tests pass.
 - Submit a pull request with a detailed description of your changes.
 
-## License
-
-*Django RecomPI* is licensed under the MIT License. See the LICENSE file for more details.
-
 ## Support
 
 For support or questions, please submit a [ticket](https://panel.recompi.com/tickets/new) or [open an issue](https://github.com/recompi/django-recompi/issues) on GitHub.
