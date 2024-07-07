@@ -4,12 +4,21 @@ from django_recompi.models import RecomPIModelMixin
 
 # Product model to represent items in an e-commerce platform
 class Product(models.Model, RecomPIModelMixin):
-    RECOMPI_DATA_FIELDS = [
-        "name",
-        "reviews__comment",
-        "reviews__rating",
-        "reviews__counter.count",
-    ]
+    RECOMPI_DATA_FIELDS = {
+        "product-view": [
+            "name",
+            "reviews__comment",
+            "reviews__rating",
+            "reviews__counter.count",
+        ],
+        "product-click": [
+            "name",
+            "reviews__comment",
+            "reviews__rating",
+            "reviews__counter.count",
+        ],
+        "test": ["name"],
+    }
     name = models.CharField(max_length=100, db_index=True)
     description = models.TextField()
 
@@ -65,7 +74,7 @@ class ReviewCounter(models.Model):
 #     Location(url="https://www.example.com/products/1"),
 # )
 
-# # Get product recommendations for a user
+# # # Get product recommendations for a user
 # recommendations = Product.recompi_recommend(
 #     "product-view",
 #     SecureProfile("user_id", "some_unique_user_id"),

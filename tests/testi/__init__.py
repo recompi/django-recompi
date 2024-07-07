@@ -1,1 +1,1 @@
-default_app_config = 'testi.apps.TestiConfig'
+default_app_config = "testi.apps.TestiConfig"

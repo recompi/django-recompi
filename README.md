@@ -60,7 +60,12 @@ product = Product.objects.first()
 product.recompi_track(
     "product-view",
     SecureProfile("profile_id", "user_profile_id"),
-    "https://www.example.com/products/1",
+    Location(
+        ip="1.1.1.1",  # Optional
+        url="https://www.example.com/products/1",
+        referer="REFERER_URL",  # Optional
+        useragent="USERAGENT",  # Optional
+    ),
 )
 ```
 
@@ -70,11 +75,16 @@ product.recompi_track(
 # Get product recommendations for a user
 recommendations = Product.recompi_recommend(
     "product-view",
-    profiles=SecureProfile("profile_id", "user_profile_id"),
+    SecureProfile("profile_id", "user_profile_id"),
 )
 
 # Example of printing recommendations
-print([{"name": p.name, "recommedation-rank": getattr(p, 'recompi_rank', None)} for p in recommendations.get("product-view", [])])
+print([
+    {
+        "name": p.name,
+        "recommedation-rank": getattr(p, 'recompi_rank', None)
+    } for p in recommendations.get("product-view", [])
+])
 ```
 
 ## Settings Configuration
@@ -93,16 +103,10 @@ print([{"name": p.name, "recommedation-rank": getattr(p, 'recompi_rank', None)} 
 - **Default:** `True`
 - **Description:** Flag indicating whether to use secure API connections.
 
-### `RECOMPI_SECURE_PROFILE_HASH_SALT`
+### `RECOMPI_SECURE_HASH_SALT`
 
 - **Type:** `str` or `None`
 - **Description:** Salt used to hash profile information securely. Profiles hashed with this salt before sending data to RecomPI servers using `SecureProfile`.
-
-### `RECOMPI_SET_RANK_ON_RECORD`
-
-- **Type:** `bool`
-- **Default:** `True`
-- **Description:** Flag indicating whether to set the recommendation rank on records.
 
 ## Error Handling and Exceptions
 
@@ -116,7 +120,7 @@ Ensure the following security best practices when using *Django RecomPI*:
 
 - **Secure API Key Handling**: Keep `RECOMPI_API_KEY` secure and avoid exposing it in version control or public repositories.
 - **Data Encryption**: Use HTTPS (`RECOMPI_SECURE_API`) to encrypt data transmitted between your Django application and the RecomPI service.
-- **Secure Profile Hashing**: Utilize `RECOMPI_SECURE_PROFILE_HASH_SALT` to hash profile IDs before sending them to RecomPI servers. This helps protect user data by obscuring identifiable information during transmission.
+- **Secure Profile Hashing**: Utilize `RECOMPI_SECURE_HASH_SALT` to hash profile IDs before sending them to RecomPI servers. This helps protect user data by obscuring identifiable information during transmission.
 
 ## Contributing and Development
 

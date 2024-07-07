@@ -1,4 +1,4 @@
-default_app_config = 'django_recompi.apps.DjangoRecompiConfig'
+default_app_config = "django_recompi.apps.DjangoRecompiConfig"
 
 from .models import (
     RecomPIFieldTypeError,

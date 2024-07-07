@@ -1,11 +1,12 @@
 from django.core.management.base import BaseCommand
-from testi.models import Product, Review, ReviewCounter, RatingChoices
 
 
 class Command(BaseCommand):
     help = "Seed the database with initial data"
 
     def handle(self, *args, **kwargs):
+        from testi.models import Product, Review, ReviewCounter, RatingChoices
+
         self.stdout.write("Seeding the database...")
 
         # Create some products
