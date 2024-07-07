@@ -146,4 +146,5 @@ Explore these examples to understand how *Django RecomPI* can be applied:
 
 To optimize performance with *Django RecomPI*:
 
+- **Query Optimization**: Enhance performance by leveraging Django's queryset optimizations (`select_related`, `prefetch_related`) to minimize database queries when retrieving recommendations. Pass the optimized queryset directly as the `queryset` parameter to `recompi_recommend`.
 - **Caching**: Implement caching strategies to store and retrieve frequently accessed recommendation data efficiently.
