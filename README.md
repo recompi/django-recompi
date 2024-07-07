@@ -57,17 +57,27 @@ class ReviewCounter(models.Model):
 ```python
 # Track user interaction with a product
 product = Product.objects.first()
+
+# Using SecureProfile to hash profile identifiers before sending to RecomPI
+profile = SecureProfile("profile_id", "user_profile_id")
+
+# Providing location information including optional data
+location = Location(
+    ip="1.1.1.1",          # Optional: IP address of the user
+    url="https://www.example.com/products/1",
+    referer="REFERER_URL", # Optional: Referring URL
+    useragent="USERAGENT"  # Optional: User agent of the client
+)
+
+# Tracking the interaction using RecomPI integration
 product.recompi_track(
-    "product-view",
-    SecureProfile("profile_id", "user_profile_id"),
-    Location(
-        ip="1.1.1.1",  # Optional
-        url="https://www.example.com/products/1",
-        referer="REFERER_URL",  # Optional
-        useragent="USERAGENT",  # Optional
-    ),
+    "product-view",  # Interaction label
+    profile,         # SecureProfile instance
+    location         # Location instance
 )
 ```
+
+This revised version clarifies the usage of `SecureProfile` and `Location` classes while also providing a clear example of how to track user interactions with a product using the `recompi_track` method. We encourage you to refer to the original [RecomPI package documentation](https://pypi.org/project/recompi/) for detailed information on these classes and other useful utilities like `Profile`.
 
 ### Getting recommendations
 
@@ -79,13 +89,62 @@ recommendations = Product.recompi_recommend(
 )
 
 # Example of printing recommendations
-print([
+print(
     {
-        "name": p.name,
-        "recommedation-rank": getattr(p, 'recompi_rank', None)
-    } for p in recommendations.get("product-view", [])
-])
+        k: {"name": p.name, "recommedation-rank": p.recompi_rank}
+        for k, pp in recommendations.items()
+        for p in pp
+    }
+)
 ```
+
+Certainly! Here's an enhanced version of the documentation for the `RecomPILabels` class that includes an explanation about flexibility in adding custom labels:
+
+### RecomPILabels
+
+The `RecomPILabels` class provides predefined labels for tracking various interactions using RecomPI within your Django application. While these labels are provided for convenience, developers are not restricted to using only these predefined labels and can add custom labels as needed.
+
+#### Predefined Labels
+
+Use these labels when tracking user interactions or recommending items:
+
+- **Buy**: Indicates a purchase action.
+- **Like**: Indicates a user liking an item.
+- **Sell**: Indicates an item being listed for sale.
+- **View**: Indicates viewing an item.
+- **Click**: Indicates clicking on an item or link.
+- **Upload**: Indicates uploading a file or content.
+- **Comment**: Indicates leaving a comment on an item.
+- **Message**: Indicates sending a message.
+
+These predefined labels are designed to standardize interaction types and facilitate consistent tracking and recommendation processes using RecomPI API.
+
+#### Custom Labels
+
+Developers can also define and use custom labels as per their application's specific needs. There's no restriction on the type or format of labels used with RecomPI. Simply pass the desired label string when tracking interactions or recommending items.
+
+#### Example
+
+```python
+# Track a user viewing a product
+product = Product.objects.first()
+product.recompi_track(
+    RecomPILabels.View,
+    profiles=SecureProfile("profile_id", "user_id_123"),
+    location=Location(url="https://www.example.com/products/1")
+)
+
+# Recommend products based on user interactions
+recommendations = Product.recompi_recommend(
+    labels=["custom_label_1", "custom_label_2"],
+    profiles=SecureProfile("profile_id", "user_id_123"),
+    size=5,
+)
+
+print(recommendations)
+```
+
+By using `RecomPILabels`, you can leverage predefined labels or introduce custom labels, offering flexibility in tracking and recommending items based on user interactions within your Django application.
 
 ## Settings Configuration
 
@@ -122,19 +181,6 @@ Ensure the following security best practices when using *Django RecomPI*:
 - **Data Encryption**: Use HTTPS (`RECOMPI_SECURE_API`) to encrypt data transmitted between your Django application and the RecomPI service.
 - **Secure Profile Hashing**: Utilize `RECOMPI_SECURE_HASH_SALT` to hash profile IDs before sending them to RecomPI servers. This helps protect user data by obscuring identifiable information during transmission.
 
-## Contributing and Development
-
-We welcome contributions to *Django RecomPI*! If you'd like to contribute, please follow these steps:
-
-- Fork the repository and clone it to your local environment.
-- Install dependencies and set up a development environment.
-- Make changes, write tests, and ensure all tests pass.
-- Submit a pull request with a detailed description of your changes.
-
-## Support
-
-For support or questions, please submit a [ticket](https://panel.recompi.com/tickets/new) or [open an issue](https://github.com/recompi/django-recompi/issues) on GitHub.
-
 ## Examples and Use Cases
 
 Explore these examples to understand how *Django RecomPI* can be applied:
@@ -148,3 +194,16 @@ To optimize performance with *Django RecomPI*:
 
 - **Query Optimization**: Enhance performance by leveraging Django's queryset optimizations (`select_related`, `prefetch_related`) to minimize database queries when retrieving recommendations. Pass the optimized queryset directly as the `queryset` parameter to `recompi_recommend`.
 - **Caching**: Implement caching strategies to store and retrieve frequently accessed recommendation data efficiently.
+
+## Contributing and Development
+
+We welcome contributions to *Django RecomPI*! If you'd like to contribute, please follow these steps:
+
+- Fork the repository and clone it to your local environment.
+- Install dependencies and set up a development environment.
+- Make changes, write tests, and ensure all tests pass.
+- Submit a pull request with a detailed description of your changes.
+
+## Support
+
+For support or questions, please submit a [ticket](https://panel.recompi.com/tickets/new) or [open an issue](https://github.com/recompi/django-recompi/issues) on GitHub.

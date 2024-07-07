@@ -23,7 +23,15 @@ class RecomPIModelMixin:
             self.prob = prob
 
         def to_q(self, qs: QuerySet) -> Q:
-            """Converts the search term to a Django Q object."""
+            """
+            Converts the search term to a Django Q object with MD5 hashing.
+
+            Args:
+                qs (QuerySet): The queryset to apply the annotation.
+
+            Returns:
+                Q: A Django Q object representing the search term with MD5 hashed field.
+            """
             KEY = f"__{self.field}_md5"
             return qs.annotate(
                 **{
@@ -53,19 +61,25 @@ class RecomPIModelMixin:
         def __repr__(self) -> str:
             return str(self)
 
-    def _recompi_api(self, api_key: str = None) -> RecomPI:
+    def _recompi_api(self, api_key: Optional[str] = None) -> RecomPI:
         """
         Initialize and return a RecomPI API instance.
 
         Args:
-            api_key (Optional[str]): Custom and on-demand API key for this tracking operation
+            api_key (Optional[str]): Custom API key for this operation.
 
         Raises:
-            RecomPIException: If RECOMPI_API_KEY is not set in settings.
+            RecomPIException: If RECOMPI_API_KEY is not set in Django settings.
 
         Returns:
-            RecomPI: Instance of RecomPI API.
+            RecomPI: An instance of the RecomPI API.
+
+        Notes:
+            This method initializes a RecomPI API instance using either the provided `api_key` or the
+            one set in Django settings. If `api_key` is not provided and RECOMPI_API_KEY is not set
+            in settings, a RecomPIException is raised.
         """
+
         api_key = (
             api_key
             or self.RECOMPI_API_KEY
@@ -144,6 +158,15 @@ class RecomPIModelMixin:
         return f"{self._recompi_class_name()}.{label}"
 
     def _hashify_value(self, value: Any) -> str:
+        """
+        Hashes a given value using MD5 encryption concatenated with a hash salt.
+
+        Args:
+            value (Any): The value to be hashed.
+
+        Returns:
+            str: The MD5 hash of the concatenated value and hash salt.
+        """
         return md5((str(value) + self.hash_salt).encode()).hexdigest()
 
     def _recompi_rank(
@@ -158,12 +181,12 @@ class RecomPIModelMixin:
 
         Args:
             items (List[Any]): List of items to rank.
-            search_terms (List[RecomPISearchTerm]): List of search terms.
-            size (int): Number of items to recommend to return.
-            remove_rank_field (Optional[bool]): Don't attach the `recompi_rank` the output response.
+            search_terms (List[RecomPISearchTerm]): List of search terms defining ranking criteria.
+            size (int): Number of ranked items to return.
+            remove_rank_field (bool): If True, excludes the 'recompi_rank' field from the output.
 
         Returns:
-            List[Any]: Ranked list of items.
+            List[Any]: Ranked list of items based on the provided search terms.
         """
 
         def fuzzy_integral(item):
@@ -215,25 +238,41 @@ class RecomPIModelMixin:
         max_polling_size: Optional[int] = None,
         return_response: bool = False,
         skip_rank_field: bool = False,
-        api_key: str = None,
+        api_key: Optional[str] = None,
     ) -> Union[Dict[str, List[Any]], Tuple[Dict[str, List[Any]], RecomPIResponse]]:
         """
         Recommend items based on labels and search terms.
 
         Args:
             labels (Union[str, List[str]]): List of labels or a single label.
-            profiles (Optional[List[str]]): List of profiles.
-            geo (Optional[str]): Geographical data.
-            query_manager (Optional[str]): Query manager name.
-            queryset (Optional[QuerySet]): The queryset which the recommendation will be based on,
+            profiles (Optional[List[str]]): List of profiles identifying users.
+            geo (Optional[str]): Geographical data relevant to recommendations.
+            query_manager (str): Name of the query manager on the model.
+            queryset (Optional[QuerySet]): Custom queryset to base recommendations on.
             size (int): Number of items to recommend per label.
-            max_polling_size (Optional[int]): The maximum number of records initially retrieved from the database for ranking. Setting this too low may exclude potentially relevant results, whereas setting it to None imposes no limit.
-            skip_rank_field (Optional[bool]): Don't attach the `recompi_rank` the output response.
-            api_key (Optional[str]): Custom and on-demand API key for this tracking operation
+            max_polling_size (Optional[int]): Maximum number of records to retrieve from the database for initial ranking.
+            return_response (bool): If True, returns the response along with recommendations in a tuple.
+            skip_rank_field (bool): If True, excludes the 'recompi_rank' field from the output.
+            api_key (Optional[str]): Custom API key for this operation.
 
         Returns:
-            Dict[str, List[Any]]: Dictionary of recommended items by label.
+            Union[Dict[str, List[Any]], Tuple[Dict[str, List[Any]], RecomPIResponse]]:
+                Dictionary of recommended items by label, or tuple containing recommendations and RecomPI response if return_response=True.
+
+        Notes:
+            This method generates recommendations based on specified labels and optional search terms.
+            If `api_key` is provided, it overrides the default API key set in Django settings and
+            the `RECOMPI_API_KEY` property defined in the class.
+
+            The recommendations are retrieved from RecomPI API, utilizing the provided `labels`,
+            `profiles`, and optional `geo` parameters. The method also supports custom `queryset`
+            and `query_manager` for fetching items from the database.
+
+            If `return_response` is True, the method returns a tuple containing both the recommendations
+            and the detailed response from RecomPI API. By default, the 'recompi_rank' field is attached
+            to the output response unless `skip_rank_field` is set to True.
         """
+
         self = cls()
         CLASS = self._recompi_class_name()
 
@@ -344,21 +383,28 @@ class RecomPIModelMixin:
         profiles: List[str],
         location: str,
         geo: Optional[str] = None,
-        api_key: str = None,
+        api_key: Optional[str] = None,
     ) -> Any:
         """
-        Track user interactions with the system.
+        Track user interactions with the system using RecomPI API.
 
         Args:
-            label (str): Interaction label.
-            profiles (List[str]): List of profiles.
-            location (str): Location information.
-            geo (Optional[str]): Geographical data.
-            api_key (Optional[str]): Custom and on-demand API key for this tracking operation
+            label (str): The label indicating the type of interaction (e.g., "product-view", "click").
+            profiles (List[str]): List of profile identifiers associated with the interaction.
+            location (str): The location information related to the interaction.
+            geo (Optional[str]): Geographical data related to the interaction (default: None).
+            api_key (Optional[str]): Custom API key for this tracking operation (default: None).
 
         Returns:
-            Any: Response from RecomPI API.
+            Any: Response from the RecomPI API for tracking the interaction.
+
+        Notes:
+            This method sends a tracking request to RecomPI API to record user interactions,
+            including the interaction label, profiles, location, and optional geographical data.
+            If `api_key` is provided, it overrides the default API key set in Django settings and
+            the `RECOMPI_API_KEY` property defined in the class.
         """
+
         api = self._recompi_api(api_key)
 
         CLASS = self._recompi_class_name()

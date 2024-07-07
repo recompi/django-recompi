@@ -80,4 +80,4 @@ class ReviewCounter(models.Model):
 #     SecureProfile("user_id", "some_unique_user_id"),
 # )
 
-# print([{"name": p.name, "recommedation-rank": p.recompi_rank} for p in recommendations.get("product-view", [])])
+# print({k:{"name": p.name, "recommedation-rank": p.recompi_rank} for k, pp in recommendations.items() for p in pp})
