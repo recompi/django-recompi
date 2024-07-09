@@ -1,4 +1,14 @@
-from recompi import *
+from recompi import (
+    RecomPIFieldTypeError,
+    RecomPIException,
+    Tag,
+    Profile,
+    SecureProfile,
+    Location,
+    Geo,
+    RecomPIResponse,
+    RecomPI,
+)
 from hashlib import md5
 from collections import OrderedDict
 from typing import Any, Dict, List, Tuple, Optional, Union
@@ -13,6 +23,7 @@ class RecomPIModelMixin:
 
     RECOMPI_API_KEY: str = None
     RECOMPI_NONE_SPECIAL_LITERAL: str = str(None)
+    RECOMPI_SEARCH_TOKENIZER_PROFILER: str = "search_token"
     RECOMPI_DATA_FIELDS: Union[Dict[str, List[str]], List[str]] = []
 
     class RecomPISearchTerm:
@@ -172,13 +183,6 @@ class RecomPIModelMixin:
 
     @classmethod
     def _recompi_tokenize(cls, query: Union[str, List[str]]) -> List[str]:
-        if not isinstance(query, (str, list)):
-            raise RecomPIException(
-                "Expecting the input query to be either `str` or `list`, but got an instance of `{}`!".format(
-                    type(query).__name__
-                )
-            )
-
         tokens = OrderedDict()
 
         for index, token in enumerate(
@@ -275,14 +279,16 @@ class RecomPIModelMixin:
             query_manager (str): Name of the query manager on the model.
             queryset (Optional[QuerySet]): Custom queryset to base recommendations on.
             size (int): Number of items to recommend per label.
-            max_polling_size (Optional[int]): Maximum number of records to retrieve from the database for initial ranking.
+            max_polling_size (Optional[int]): Maximum number of records to retrieve from \
+                the database for initial ranking.
             return_response (bool): If True, returns the response along with recommendations in a tuple.
             skip_rank_field (bool): If True, excludes the 'recompi_rank' field from the output.
             api_key (Optional[str]): Custom API key for this operation.
 
         Returns:
             Union[Dict[str, List[Any]], Tuple[Dict[str, List[Any]], RecomPIResponse]]:
-                Dictionary of recommended items by label, or tuple containing recommendations and RecomPI response if return_response=True.
+                Dictionary of recommended items by label, or tuple containing recommendations \
+                    and RecomPI response if return_response=True.
 
         Notes:
             This method generates recommendations based on specified labels and optional search terms.
@@ -297,7 +303,6 @@ class RecomPIModelMixin:
             and the detailed response from RecomPI API. By default, the 'recompi_rank' field is attached
             to the output response unless `skip_rank_field` is set to True.
         """
-
         self = cls()
         CLASS = self._recompi_class_name()
 
@@ -364,7 +369,9 @@ class RecomPIModelMixin:
 
             if not isinstance(FIELDS, list):
                 raise RecomPIException(
-                    f"Expecting `{CLASS}.RECOMPI_DATA_FIELDS['{label}']` or `{CLASS}.RECOMPI_DATA_FIELDS` to be a list; but it's an instance of `{type(FIELDS).__name__}`"
+                    f"Expecting `{CLASS}.RECOMPI_DATA_FIELDS['{label}']` or "
+                    + f"`{CLASS}.RECOMPI_DATA_FIELDS` to be a list; "
+                    + "but it's an instance of `{type(FIELDS).__name__}`"
                 )
 
             st = SearchTerms()
@@ -445,23 +452,22 @@ class RecomPIModelMixin:
 
         if not isinstance(FIELDS, list):
             raise RecomPIException(
-                f"Expecting `{CLASS}.RECOMPI_DATA_FIELDS['{label}']` or `{CLASS}.RECOMPI_DATA_FIELDS` to be a list; but it's an instance of `{type(FIELDS).__name__}`"
+                f"Expecting `{CLASS}.RECOMPI_DATA_FIELDS['{label}']` or "
+                + f"`{CLASS}.RECOMPI_DATA_FIELDS` to be a list; "
+                f"but it's an instance of `{type(FIELDS).__name__}`"
             )
 
         if isinstance(location, str):
             location = Location(url=location)
-
-        if not isinstance(location, Location):
-            raise RecomPIException(
-                f"Expecting `location` to be an instance of `RecomPI.Location`; but it's an instance of `{type(location).__name__}`"
-            )
 
         tags = []
         for index, field in enumerate(FIELDS):
             values = None
             if not isinstance(field, str):
                 raise RecomPIException(
-                    f"Expecting `{CLASS}.RECOMPI_DATA_FIELDS['{label}'][{index}]` or `{CLASS}.RECOMPI_DATA_FIELDS[{index}]` to be a string; but it's an instance of `{type(field).__name__}`"
+                    f"Expecting `{CLASS}.RECOMPI_DATA_FIELDS['{label}'][{index}]` or "
+                    + f"`{CLASS}.RECOMPI_DATA_FIELDS[{index}]` to be a string; "
+                    + "but it's an instance of `{type(field).__name__}`"
                 )
 
             values = self._recompi_getattr(
@@ -488,8 +494,8 @@ class RecomPIModelMixin:
     @classmethod
     def recompi_search(
         cls,
-        query: str,
-        labels: Union[str, List[str]] = None,
+        query: Union[str, List[str]],
+        labels: Optional[Union[str, List[str]]] = None,
         geo: Optional[str] = None,
         query_manager: str = "objects",
         queryset: QuerySet = None,
@@ -500,12 +506,13 @@ class RecomPIModelMixin:
         api_key: Optional[str] = None,
     ):
         """
-        Performs a RecomPI search based on a query string, tokenizes the query, and recommends items matching each token.
-        Aggregates and ranks the results.
+        Performs a RecomPI search based on a query string, tokenizes the query,
+        and recommends items matching each token. Aggregates and ranks the results.
 
         Args:
-            query (str): The search query string.
-            labels (Union[str, List[str]]): List of labels or a single label. Defaults to RecomPIModelMixin.RecomPILabels.SearchConversion.
+            query (Union[str, List[str]]): The search query string or tokenized.
+            labels (Optional[Union[str, List[str]]]): List of labels or a single label. \
+                Defaults to RecomPIModelMixin.RecomPILabels.SearchConversion.
             geo (Optional[str]): Geographic information for the search.
             query_manager (str): The name of the manager to use for querying objects. Defaults to "objects".
             queryset (QuerySet, optional): An optional queryset to limit the search scope. Defaults to None.
@@ -524,9 +531,6 @@ class RecomPIModelMixin:
         if not isinstance(labels, list):
             labels = [labels]
 
-        if not isinstance(queryset, QuerySet):
-            queryset = getattr(cls, query_manager).all()
-
         items = {}
         responses = []
 
@@ -534,7 +538,7 @@ class RecomPIModelMixin:
         for token in cls._recompi_tokenize(query):
             objects, resp = cls.recompi_recommend(
                 labels=labels,
-                profiles=SecureProfile("search_token", token),
+                profiles=SecureProfile(cls.RECOMPI_SEARCH_TOKENIZER_PROFILER, token),
                 geo=geo,
                 query_manager=query_manager,
                 queryset=queryset,
@@ -554,7 +558,7 @@ class RecomPIModelMixin:
 
                 for obj in objs:
                     obj: Model
-                    if not obj.pk in items:
+                    if obj.pk not in items:
                         items[label][obj.pk] = obj
                     else:
                         items[label][obj.pk].recompi_rank += obj.recompi_rank
@@ -580,7 +584,7 @@ class RecomPIModelMixin:
 
     def recompi_search_track(
         self,
-        query: str,
+        query: Union[str, List[str]],
         location: Optional[Union[str, Location]],
         label: Optional[str] = None,
         geo: Optional[str] = None,
@@ -590,8 +594,9 @@ class RecomPIModelMixin:
         Tracks search queries and sends tracking data to RecomPI.
 
         Args:
-            query (str): The search query string.
-            label (Optional[str]): The label to use for tracking. Defaults to RecomPIModelMixin.RecomPILabels.SearchConversion.
+            query (Union[str, List[str]]): The search query string or tokenized.
+            label (Optional[str]): The label to use for tracking. Defaults to \
+                RecomPIModelMixin.RecomPILabels.SearchConversion.
             location (Optional[Union[str, Location]]): The location identifier for the tracking.
             geo (Optional[str]): Geographic information for the tracking.
             api_key (Optional[str]): An optional API key to override the default.
@@ -605,7 +610,7 @@ class RecomPIModelMixin:
         return [
             self.recompi_track(
                 label=label,
-                profiles=SecureProfile("search_token", token),
+                profiles=SecureProfile(self.RECOMPI_SEARCH_TOKENIZER_PROFILER, token),
                 location=location,
                 geo=geo,
                 api_key=api_key,
@@ -625,5 +630,19 @@ class RecomPIModelMixin:
         Comment = "comment"
         Message = "message"
 
-        SearchClick = "search_click"
-        SearchConversion = "search_conversion"
+        SearchClick = "search-click"
+        SearchConversion = "search-conversion"
+
+
+__all__ = [
+    "RecomPIFieldTypeError",
+    "RecomPIException",
+    "Tag",
+    "Profile",
+    "SecureProfile",
+    "Location",
+    "Geo",
+    "RecomPIResponse",
+    "RecomPI",
+    "RecomPIModelMixin",
+]
