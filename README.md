@@ -100,7 +100,7 @@ print(
 
 ## Settings Configuration
 
-*Django RecomPI* can be customized through the following settings in your `settings.py` file, you can read the full documentation [here](docs/settings.md); but the most important settings you **much set** in your `settings.py` is `RECOMPI_API_KEY`:
+*Django RecomPI* can be customized through the following settings in your `settings.py` file, you can read the full documentation [here](https://github.com/recompi/django-recompi/blob/main/docs/settings.md); but the most important settings you **much set** in your `settings.py` is `RECOMPI_API_KEY`:
 
 ### `RECOMPI_API_KEY`
 
@@ -125,7 +125,7 @@ Explore these examples to understand how *Django RecomPI* can be applied:
 
 ## Advanced details
 
-In [this page](docs/advanced.md) you can find advanced topics on the `django-recompi` package which can be very useful for developing sophisticated systems using the RecomPI recommendation system.
+In [this page](https://github.com/recompi/django-recompi/blob/main/docs/advanced.md) you can find advanced topics on the `django-recompi` package which can be very useful for developing sophisticated systems using the RecomPI recommendation system.
 
 ---
 
