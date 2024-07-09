@@ -123,11 +123,13 @@ Explore these examples to understand how *Django RecomPI* can be applied:
 - **E-commerce Recommendation**: Track user interactions on product pages and recommend related products based on their behavior.
 - **Content Personalization**: Customize content recommendations based on user preferences and historical interactions.
 
-## Advanced details
-
 ## In-Depth Guide
 
 Explore our in-depth guide to uncover advanced topics and features of the `django-recompi` package. This section provides essential insights for developing sophisticated recommendation systems using RecomPI. For detailed information, visit the [Advanced Documentation](https://github.com/recompi/django-recompi/blob/main/docs/advanced.md).
+
+## Basic Usage
+
+The `django-recompi` package is built on top of the core `recompi` package. Therefore, understanding the foundational concepts and functionalities in the `recompi` package is essential. For an introduction to the basic usage of `django-recompi`, including how to work with essential classes like `SecureProfile` and `Profile`, please refer to our [PyPI page](https://pypi.org/project/recompi/). This resource offers comprehensive examples and instructions to help you get started with implementing fundamental features of the RecomPI recommendation system.
 
 ---
 
