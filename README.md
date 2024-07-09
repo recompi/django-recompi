@@ -125,7 +125,9 @@ Explore these examples to understand how *Django RecomPI* can be applied:
 
 ## Advanced details
 
-In [this page](https://github.com/recompi/django-recompi/blob/main/docs/advanced.md) you can find advanced topics on the `django-recompi` package which can be very useful for developing sophisticated systems using the RecomPI recommendation system.
+## In-Depth Guide
+
+Explore our in-depth guide to uncover advanced topics and features of the `django-recompi` package. This section provides essential insights for developing sophisticated recommendation systems using RecomPI. For detailed information, visit the [Advanced Documentation](https://github.com/recompi/django-recompi/blob/main/docs/advanced.md).
 
 ---
 
