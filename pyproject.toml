@@ -1,6 +1,6 @@
 [project]
 name = "django-recompi"
-version = "2.1.1"
+version = "2.1.2"
 description = "Integration of RecomPI with Django models for recommendation and tracking functionalities."
 readme = "README.md"
 authors = [{ name = "RecomPI", email = "tech@recompi.com" }]
@@ -38,7 +38,7 @@ dependencies = [
 ]
 
 [project.urls]
-Source = "https://github.com/recompi/python-recompi"
+Source = "https://github.com/recompi/django-recompi"
 "RecomPI Package" = "https://pypi.org/project/recompi"
 "Use Cases" = "https://www.recompi.com/category/use-cases/documents-use-cases"
 "Bug Tracker" = "https://github.com/recompi/django-recompi/issues"
