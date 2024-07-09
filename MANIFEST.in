@@ -1,1 +1,4 @@
 exclude tests/*
+include README.md
+include docs/settings.md
+include docs/advaced.md

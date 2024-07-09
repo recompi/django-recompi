@@ -10,7 +10,7 @@ You can install *Django RecomPI* via pip. Here's how:
 pip install django-recompi
 ```
 
-## Usage
+## Quick Start
 
 ### Setting up a Django model with RecomPI integration
 
@@ -98,57 +98,9 @@ print(
 )
 ```
 
-Certainly! Here's an enhanced version of the documentation for the `RecomPILabels` class that includes an explanation about flexibility in adding custom labels:
-
-### RecomPILabels
-
-The `RecomPILabels` class provides predefined labels for tracking various interactions using RecomPI within your Django application. While these labels are provided for convenience, developers are not restricted to using only these predefined labels and can add custom labels as needed.
-
-#### Predefined Labels
-
-Use these labels when tracking user interactions or recommending items:
-
-- **Buy**: Indicates a purchase action.
-- **Like**: Indicates a user liking an item.
-- **Sell**: Indicates an item being listed for sale.
-- **View**: Indicates viewing an item.
-- **Click**: Indicates clicking on an item or link.
-- **Upload**: Indicates uploading a file or content.
-- **Comment**: Indicates leaving a comment on an item.
-- **Message**: Indicates sending a message.
-
-These predefined labels are designed to standardize interaction types and facilitate consistent tracking and recommendation processes using RecomPI API.
-
-#### Custom Labels
-
-Developers can also define and use custom labels as per their application's specific needs. There's no restriction on the type or format of labels used with RecomPI. Simply pass the desired label string when tracking interactions or recommending items.
-
-#### Example
-
-```python
-# Track a user viewing a product
-product = Product.objects.first()
-product.recompi_track(
-    RecomPILabels.View,
-    profiles=SecureProfile("profile_id", "user_id_123"),
-    location=Location(url="https://www.example.com/products/1")
-)
-
-# Recommend products based on user interactions
-recommendations = Product.recompi_recommend(
-    labels=["custom_label_1", "custom_label_2"],
-    profiles=SecureProfile("profile_id", "user_id_123"),
-    size=5,
-)
-
-print(recommendations)
-```
-
-By using `RecomPILabels`, you can leverage predefined labels or introduce custom labels, offering flexibility in tracking and recommending items based on user interactions within your Django application.
-
 ## Settings Configuration
 
-*Django RecomPI* can be customized through the following settings in your `settings.py` file:
+*Django RecomPI* can be customized through the following settings in your `settings.py` file, you can read the full documentation [here](docs/settings.md); but the most important settings you **much set** in your `settings.py` is `RECOMPI_API_KEY`:
 
 ### `RECOMPI_API_KEY`
 
@@ -156,30 +108,13 @@ By using `RecomPILabels`, you can leverage predefined labels or introduce custom
 - **Description:** API key for accessing the RecomPI service. Required for integration.
 - **Note:** To obtain `RECOMPI_API_KEY`, register on the [RecomPI panel](https://panel.recompi.com/clients/sign_in). After registration, [add a campaign](https://panel.recompi.com/campaigns/new) in the panel, and a campaign token will be generated instantly. Use this token as your API key in the code.
 
-### `RECOMPI_SECURE_API`
-
-- **Type:** `bool`
-- **Default:** `True`
-- **Description:** Flag indicating whether to use secure API connections.
-
-### `RECOMPI_SECURE_HASH_SALT`
-
-- **Type:** `str` or `None`
-- **Description:** Salt used to hash profile information securely. Profiles hashed with this salt before sending data to RecomPI servers using `SecureProfile`.
-
-## Error Handling and Exceptions
-
-When using *Django RecomPI*, you may encounter the following exceptions:
-
-- **`RecomPIException`**: Raised when essential settings are not properly configured or when errors occur during API interactions. Handle these exceptions to provide appropriate feedback or logging.
-
 ## Security Considerations
 
 Ensure the following security best practices when using *Django RecomPI*:
 
 - **Secure API Key Handling**: Keep `RECOMPI_API_KEY` secure and avoid exposing it in version control or public repositories.
 - **Data Encryption**: Use HTTPS (`RECOMPI_SECURE_API`) to encrypt data transmitted between your Django application and the RecomPI service.
-- **Secure Profile Hashing**: Utilize `RECOMPI_SECURE_HASH_SALT` to hash profile IDs before sending them to RecomPI servers. This helps protect user data by obscuring identifiable information during transmission.
+- **Secure Profile Hashing**: Utilize `RECOMPI_SECURE_HASH_SALT` to hash profile IDs and other data obscuring before sending them to RecomPI servers. This helps protect user data by obscuring identifiable information during transmission and afterward.
 
 ## Examples and Use Cases
 
@@ -188,12 +123,11 @@ Explore these examples to understand how *Django RecomPI* can be applied:
 - **E-commerce Recommendation**: Track user interactions on product pages and recommend related products based on their behavior.
 - **Content Personalization**: Customize content recommendations based on user preferences and historical interactions.
 
-## Performance Considerations
+## Advanced details
 
-To optimize performance with *Django RecomPI*:
+In [this page](docs/advanced.md) you can find advanced topics on the `django-recompi` package which can be very useful for developing sophisticated systems using the RecomPI recommendation system.
 
-- **Query Optimization**: Enhance performance by leveraging Django's queryset optimizations (`select_related`, `prefetch_related`) to minimize database queries when retrieving recommendations. Pass the optimized queryset directly as the `queryset` parameter to `recompi_recommend`.
-- **Caching**: Implement caching strategies to store and retrieve frequently accessed recommendation data efficiently.
+---
 
 ## Contributing and Development
 
@@ -201,6 +135,14 @@ We welcome contributions to *Django RecomPI*! If you'd like to contribute, pleas
 
 - Fork the repository and clone it to your local environment.
 - Install dependencies and set up a development environment.
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements-dev.txt
+pre-commit install --hook-type pre-commit --hook-type pre-push
+```
+
 - Make changes, write tests, and ensure all tests pass.
 - Submit a pull request with a detailed description of your changes.
 
