@@ -24,7 +24,9 @@ class RecomPIModelMixin:
     RECOMPI_API_KEY: str = None
     RECOMPI_NONE_SPECIAL_LITERAL: str = str(None)
     RECOMPI_SEARCH_TOKENIZER_PROFILER: str = "search_token"
+
     RECOMPI_DATA_FIELDS: Union[Dict[str, List[str]], List[str]] = []
+    RECOMPI_PROFILE_ID: Union[Dict[str, List[str]], List[str]] = ["pk"]
 
     class RecomPISearchTerm:
         """Represents a search term for RecomPI with a field, value, and probability."""
@@ -73,6 +75,27 @@ class RecomPIModelMixin:
         def __repr__(self) -> str:
             return str(self)
 
+    def __init__(self) -> None:
+        """
+        Initialize the RecomPIModelMixin with API key and other settings from Django settings.
+        """
+        self._recompi_api_key = self.RECOMPI_API_KEY or getattr(
+            settings, "RECOMPI_API_KEY", None
+        )
+        self._recompi_secure_url = getattr(settings, "RECOMPI_SECURE_API", True)
+        self._recompi_hash_salt = getattr(settings, "RECOMPI_SECURE_HASH_SALT", "")
+
+        if not self._recompi_api_key:
+            raise RecomPIException("settings.RECOMPI_API_KEY is not set!")
+
+        if self._recompi_hash_salt:
+            RecomPIFieldTypeError.if_not_validated(
+                "RecomPIManager.recommend",
+                "settings.RECOMPI_SECURE_HASH_SALT",
+                self._recompi_hash_salt,
+                str,
+            )
+
     def _recompi_api(self, api_key: Optional[str] = None) -> RecomPI:
         """
         Initialize and return a RecomPI API instance.
@@ -91,30 +114,10 @@ class RecomPIModelMixin:
             one set in Django settings. If `api_key` is not provided and RECOMPI_API_KEY is not set
             in settings, a RecomPIException is raised.
         """
-
-        api_key = (
-            api_key
-            or self.RECOMPI_API_KEY
-            or getattr(settings, "RECOMPI_API_KEY", None)
-        )
-        secure_url = getattr(settings, "RECOMPI_SECURE_API", True)
-        self.hash_salt = getattr(settings, "RECOMPI_SECURE_HASH_SALT", "")
-
-        if not api_key:
-            raise RecomPIException("settings.RECOMPI_API_KEY is not set!")
-
-        if self.hash_salt:
-            RecomPIFieldTypeError.if_not_validated(
-                "RecomPIManager.recommend",
-                "settings.RECOMPI_SECURE_HASH_SALT",
-                self.hash_salt,
-                str,
-            )
-
         return RecomPI(
-            api_key=api_key,
-            secure_url=secure_url,
-            hash_salt=self.hash_salt if self.hash_salt else None,
+            api_key=api_key or self._recompi_api_key,
+            secure_url=self._recompi_secure_url,
+            hash_salt=self._recompi_hash_salt if self._recompi_hash_salt else None,
         )
 
     def _recompi_getattr(
@@ -152,11 +155,24 @@ class RecomPIModelMixin:
                 try:
                     current_field, next_fields = parts[0], parts[1:]
                     next_obj = getattr(obj, current_field)
+
                     if not next_fields:
+                        if callable(next_obj):
+                            return next_obj()
                         return next_obj
+
                     return get_value(next_obj, next_fields)
                 except AttributeError:
                     return default
+
+        if hasattr(self, field_path):
+            callable_or_result = getattr(self, field_path)
+            if callable(callable_or_result):
+                result = callable_or_result()
+                if result is None:
+                    return default
+                return result
+            return callable_or_result
 
         parts = field_path.split(".")
         return get_value(instance, parts)
@@ -179,7 +195,7 @@ class RecomPIModelMixin:
         Returns:
             str: The MD5 hash of the concatenated value and hash salt.
         """
-        return md5((str(value) + self.hash_salt).encode()).hexdigest()
+        return md5((str(value) + self._recompi_hash_salt).encode()).hexdigest()
 
     @classmethod
     def _recompi_tokenize(cls, query: Union[str, List[str]]) -> List[str]:
@@ -221,15 +237,15 @@ class RecomPIModelMixin:
         def fuzzy_integral(item):
             rank = 0
             for term in search_terms:
-                if (
-                    self._recompi_hashify_value(
-                        self._recompi_getattr(
-                            item, term.field, self.RECOMPI_NONE_SPECIAL_LITERAL
-                        )
-                    )
-                    == term.value
-                ):
-                    rank = (term.prob**2 + rank**2) ** 0.5
+                values = self._recompi_getattr(
+                    item, term.field, self.RECOMPI_NONE_SPECIAL_LITERAL
+                )
+                if not isinstance(values, list):
+                    values = [values]
+
+                for value in values:
+                    if self._recompi_hashify_value(value) == term.value:
+                        rank = (term.prob**2 + rank**2) ** 0.5
 
             item.recompi_rank = rank
             return rank
@@ -254,6 +270,75 @@ class RecomPIModelMixin:
                 break
         # return the items with proper size
         return items[: index + 1]
+
+    def _recompi_get_tags(
+        self,
+        label: str,
+        data_fields: Optional[Union[Dict[str, List[str]], List[str]]] = None,
+    ) -> List[Tag]:
+        CLASS = self._recompi_class_name()
+
+        FIELDS = self.RECOMPI_DATA_FIELDS if data_fields is None else data_fields
+        if isinstance(FIELDS, dict):
+            if label not in FIELDS:
+                raise RecomPIException(
+                    "No `{}.RECOMPI_DATA_FIELDS['{}']` is defined!".format(CLASS, label)
+                )
+
+            FIELDS = FIELDS[label]
+
+        if not isinstance(FIELDS, list):
+            raise RecomPIException(
+                f"Expecting `{CLASS}.RECOMPI_DATA_FIELDS['{label}']` or "
+                + f"`{CLASS}.RECOMPI_DATA_FIELDS` to be a list; "
+                f"but it's an instance of `{type(FIELDS).__name__}`"
+            )
+
+        tags = []
+        for index, field in enumerate(FIELDS):
+            values = None
+            if not isinstance(field, str):
+                raise RecomPIException(
+                    f"Expecting `{CLASS}.RECOMPI_DATA_FIELDS['{label}'][{index}]` or "
+                    + f"`{CLASS}.RECOMPI_DATA_FIELDS[{index}]` to be a string; "
+                    + "but it's an instance of `{type(field).__name__}`"
+                )
+
+            values = self._recompi_getattr(
+                self, field, self.RECOMPI_NONE_SPECIAL_LITERAL
+            )
+
+            if values is None:
+                values = self.RECOMPI_NONE_SPECIAL_LITERAL
+
+            if not isinstance(values, list):
+                values = [values]
+
+            for value in values:
+                tags.append(
+                    Tag(
+                        id="{}:{}".format(field, self._recompi_hashify_value(value)),
+                        name=field,
+                        desc="{}.{}".format(CLASS, field),
+                    )
+                )
+
+        return tags
+
+    def recompi_profile_id(
+        self, label: str, secure_profile: bool = True
+    ) -> Union[SecureProfile, Profile]:
+        profile_class = SecureProfile if secure_profile else Profile
+
+        return profile_class(
+            "{}_link".format(self._recompi_class_name()),
+            "|".join(
+                [
+                    str(tag.to_json())
+                    for tag in self._recompi_get_tags(label, self.RECOMPI_PROFILE_ID)
+                ]
+            ),
+        )
 
     @classmethod
     def recompi_recommend(
@@ -307,13 +392,6 @@ class RecomPIModelMixin:
         CLASS = self._recompi_class_name()
 
         if queryset is not None:
-            if not isinstance(queryset, QuerySet):
-                raise RecomPIException(
-                    "The input `queryset` needs to be an instance of `QuerySet`; but got an instance of `{}`".format(
-                        type(queryset).__name__
-                    )
-                )
-
             if self.__class__ != queryset.model:
                 raise RecomPIException(
                     "The input `queryset` should a queryset for model `{}` class.".format(
@@ -413,7 +491,7 @@ class RecomPIModelMixin:
     def recompi_track(
         self,
         label: str,
-        profiles: List[str],
+        profiles: Union[List[Union[Profile, SecureProfile]], Profile, SecureProfile],
         location: Union[str, Location],
         geo: Optional[str] = None,
         api_key: Optional[str] = None,
@@ -423,7 +501,8 @@ class RecomPIModelMixin:
 
         Args:
             label (str): The label indicating the type of interaction (e.g., "product-view", "click").
-            profiles (List[str]): List of profile identifiers associated with the interaction.
+            profiles (List[Profile|SecureProfile], Profile, SecureProfile): User profiles as a list, \
+                Profile or SecureProfile.
             location (str, Location): The location/url information related to the interaction.
             geo (Optional[str]): Geographical data related to the interaction (default: None).
             api_key (Optional[str]): Custom API key for this tracking operation (default: None).
@@ -439,57 +518,16 @@ class RecomPIModelMixin:
         """
         api = self._recompi_api(api_key)
 
-        CLASS = self._recompi_class_name()
-
-        FIELDS = self.RECOMPI_DATA_FIELDS
-        if isinstance(FIELDS, dict):
-            if label not in FIELDS:
-                raise RecomPIException(
-                    "No `{}.RECOMPI_DATA_FIELDS['{}']` is defined!".format(CLASS, label)
-                )
-
-            FIELDS = FIELDS[label]
-
-        if not isinstance(FIELDS, list):
-            raise RecomPIException(
-                f"Expecting `{CLASS}.RECOMPI_DATA_FIELDS['{label}']` or "
-                + f"`{CLASS}.RECOMPI_DATA_FIELDS` to be a list; "
-                f"but it's an instance of `{type(FIELDS).__name__}`"
-            )
-
         if isinstance(location, str):
             location = Location(url=location)
 
-        tags = []
-        for index, field in enumerate(FIELDS):
-            values = None
-            if not isinstance(field, str):
-                raise RecomPIException(
-                    f"Expecting `{CLASS}.RECOMPI_DATA_FIELDS['{label}'][{index}]` or "
-                    + f"`{CLASS}.RECOMPI_DATA_FIELDS[{index}]` to be a string; "
-                    + "but it's an instance of `{type(field).__name__}`"
-                )
-
-            values = self._recompi_getattr(
-                self, field, self.RECOMPI_NONE_SPECIAL_LITERAL
-            )
-
-            if values is None:
-                values = self.RECOMPI_NONE_SPECIAL_LITERAL
-
-            if not isinstance(values, list):
-                values = [values]
-
-            for value in values:
-                tags.append(
-                    Tag(
-                        id="{}:{}".format(field, self._recompi_hashify_value(value)),
-                        name=field,
-                        desc="{}.{}".format(CLASS, field),
-                    )
-                )
-
-        return api.push(self._recompi_labelify(label), tags, profiles, location, geo)
+        return api.push(
+            self._recompi_labelify(label),
+            self._recompi_get_tags(label),
+            profiles,
+            location,
+            geo,
+        )
 
     @classmethod
     def recompi_search(
@@ -617,6 +655,120 @@ class RecomPIModelMixin:
             )
             for token in tokens
         ]
+
+    def recompi_link(
+        self,
+        instance: "RecomPIModelMixin",
+        label: str,
+        location: Union[str, Location],
+        geo: Optional[str] = None,
+        api_key: Optional[str] = None,
+    ) -> Any:
+        """
+        Links current instance to an other instance.
+
+        Args:
+            instance (RecomPIModelMixin): An other instance of `RecomPIModelMixin` which you want \
+                to link current instance to that.
+            label (str): The label indicating the type of interaction (e.g., "product-view", "click").
+            location (str, Location): The location/url information related to the interaction.
+            geo (Optional[str]): Geographical data related to the interaction (default: None).
+            api_key (Optional[str]): Custom API key for this tracking operation (default: None).
+
+        Returns:
+            Any: Response from the RecomPI API for tracking the interaction.
+
+        Notes:
+            This method sends a tracking request to RecomPI API to record user interactions,
+            including the interaction label, profiles, location, and optional geographical data.
+            If `api_key` is provided, it overrides the default API key set in Django settings and
+            the `RECOMPI_API_KEY` property defined in the class.
+        """
+        return instance.recompi_track(
+            label, self.recompi_profile_id(label), location, geo, api_key
+        )
+
+    def recompi_recommend_links(
+        self,
+        model_class: "RecomPIModelMixin",
+        labels: Union[str, List[str]],
+        geo: Optional[str] = None,
+        query_manager: str = "objects",
+        queryset: QuerySet = None,
+        size: int = 8,
+        max_polling_size: Optional[int] = None,
+        return_response: bool = False,
+        skip_rank_field: bool = False,
+        api_key: Optional[str] = None,
+    ) -> Union[Dict[str, List[Any]], Tuple[Dict[str, List[Any]], RecomPIResponse]]:
+        """
+        Recommends items based on the given labels and `model_class`
+
+        Args:
+            model_class (Type[RecomPIModelMixin]): The class of the model to use for recommendations; \
+                it should be an instance of `RecomPIModelMixin`.
+            labels (Union[str, List[str]]): List of labels or a single label.
+            geo (Optional[str]): Geographical data relevant to recommendations.
+            query_manager (str): Name of the query manager on the model.
+            queryset (Optional[QuerySet]): Custom queryset to base recommendations on.
+            size (int): Number of items to recommend per label.
+            max_polling_size (Optional[int]): Maximum number of records to retrieve from \
+                the database for initial ranking.
+            return_response (bool): If True, returns the response along with recommendations in a tuple.
+            skip_rank_field (bool): If True, excludes the 'recompi_rank' field from the output.
+            api_key (Optional[str]): Custom API key for this operation.
+
+        Returns:
+            Union[Dict[str, List[Any]], Dict[List[Any], RecomPIResponse]:
+                Dictionary of recommended items by label, or tuple containing recommendations \
+                    and RecomPI response if return_response=True.
+
+        Notes:
+            This method generates recommendations based on specified labels and optional search terms.
+            If `api_key` is provided, it overrides the default API key set in Django settings and
+            the `RECOMPI_API_KEY` property defined in the class.
+
+            The recommendations are retrieved from RecomPI API, utilizing the provided `labels`,
+            `profiles`, and optional `geo` parameters. The method also supports custom `queryset`
+            and `query_manager` for fetching items from the database.
+
+            If `return_response` is True, the method returns a tuple containing both the recommendations
+            and the detailed response from RecomPI API. By default, the 'recompi_rank' field is attached
+            to the output response unless `skip_rank_field` is set to True.
+        """
+        if not isinstance(model_class(), RecomPIModelMixin):
+            raise RecomPIFieldTypeError(
+                "RecomPI.recompi_recommend_link",
+                "model_class",
+                model_class(),
+                RecomPIModelMixin,
+            )
+
+        output = {}
+
+        if not isinstance(labels, list):
+            labels = [labels]
+
+        for label in labels:
+            result = model_class.recompi_recommend(
+                labels=labels,
+                profiles=self.recompi_profile_id(label),
+                geo=geo,
+                query_manager=query_manager,
+                queryset=queryset,
+                size=size,
+                max_polling_size=max_polling_size,
+                return_response=return_response,
+                skip_rank_field=skip_rank_field,
+                api_key=api_key,
+            )
+
+            if return_response:
+                output[label] = {"objects": result[0][label], "response": result[1]}
+            else:
+                output.update(result)
+
+        return output
 
     class RecomPILabels:
         """Predefined labels for RecomPI interactions."""

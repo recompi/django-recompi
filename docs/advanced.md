@@ -316,7 +316,132 @@ These methods enable flexible and powerful search capabilities within models tha
 
 ---
 
-## 7. Customizing the Tokenizer (`_recompi_tokenize`)
+## 7. Linking two records from two different models
+
+### `recompi_link`
+
+The `recompi_link` method links the current instance to another instance, recording the interaction with specific details.
+
+#### Basic Usage
+```python
+# Link current product to another product instance
+product1 = Product.objects.get(pk=1)
+product2 = Product.objects.get(pk=2)
+
+product1.recompi_link(
+    instance=product2,
+    label="product-view",
+    location="https://www.example.com/product/123",
+)
+```
+
+#### Parameters
+- **instance**: Another `RecomPIModelMixin` instance to link to.
+- **label**: Interaction type (e.g., "product-view", "click").
+- **location**: URL or `Location` object related to the interaction.
+- **geo**: Geographical data (optional).
+- **api_key**: Custom API key (optional).
+
+### `recompi_recommend_links`
+
+The `recompi_recommend_links` method generates item recommendations based on specified labels and a model class.
+
+#### Basic Usage
+```python
+# Recommend related products
+recommendations = product.recompi_recommend_links(
+    model_class=Product,
+    labels=["product-view", "click"],
+    size=5
+)
+```
+
+#### Parameters
+- **model_class**: The model class for recommendations.
+- **labels**: Label(s) for recommendations.
+- **geo**: Geographical data (optional).
+- **query_manager**: Query manager name (default: "objects").
+- **queryset**: Custom queryset (optional).
+- **size**: Number of items to recommend per label (default: 8).
+- **max_polling_size**: Maximum records to retrieve for initial ranking (optional).
+- **return_response**: Return raw response along with recommendations (default: False).
+- **skip_rank_field**: Exclude 'recompi_rank' field (default: False).
+- **api_key**: Custom API key (optional).
+
+#### Example
+```python
+# Get product recommendations
+recommendations = product.recompi_recommend_links(
+    model_class=Product,
+    labels=["product-view", "click"],
+    size=5,
+)
+```
+### Customizing `Profile` Fields for Model Linking
+
+Linking two models effectively requires additional data fields to create a `SecureProfile` instance. By default, the profile ID is the `pk` (primary key), but in many cases, this may not be ideal. For example, if you want to link models based on multiple fields such as `gender`, `age`, and `if_tourist`, using the `pk` alone may not suffice, especially if the user is a one-time client.
+
+To address this, you can customize the profile ID by specifying a list of fields in your model. Here's how you can do it:
+
+```python
+class Client(AbstractUser):
+    RECOMPI_PROFILE_ID = [
+        "gender",
+        "age",
+        "if_tourist",
+        # Add other relevant fields
+    ]
+```
+
+#### Recommending a `Product` to a `Client`
+
+To recommend a `Product` to a `Client` based on the specified profile fields:
+
+```python
+client = Client.objects.get(**criteria)
+recommendations = client.recompi_recommend_links(
+    model_class=Product,
+    labels=["buy", "interested"]
+)
+
+for label, products in recommendations.items():
+    for product in products:
+        print("To `{}` you need to recommend Product# {}".format(label, product.pk))
+```
+
+#### Linking a `Client` to `Products`
+
+Once you have observed client interactions, you can link the client to products based on their behavior:
+
+```python
+# Products that the client bought
+products_bought = Product.objects.filter(pk__in=BOUGHT_PRODUCT_IDS)
+
+# Products that the client showed interest in
+products_interested = Product.objects.filter(pk__in=INTERESTED_PRODUCT_IDS)
+
+for product in products_bought:
+    client.recompi_link(
+        instance=product,
+        label="buy",
+        location="https://www.example.com/product/{}".format(product.pk)
+    )
+
+for product in products_interested:
+    client.recompi_link(
+        instance=product,
+        label="interested",
+        location="https://www.example.com/product/{}".format(product.pk)
+    )
+```
+
+With this setup, the next time a similar client visits, the system will know which products to recommend, increasing the likelihood of purchases or interest.
+
+> **Note:** Don't forget to leverage [pre-training](#pre-train-data-for-optimal-search-engine-performance) to boost results from day one by linking records based on historical data. This can significantly enhance the performance of your recommendation system right from the start.
+
+---
+
+## 8. Customizing the Tokenizer (`_recompi_tokenize`)
 
 Developers can override the `_recompi_tokenize` method to implement more advanced tokenizers, such as those from the [`nltk`](https://pypi.org/project/nltk/) package.
 
@@ -332,7 +457,7 @@ class MyModel(models.Model, RecomPIModelMixin):
 
 ---
 
-## 8. Recommendation Rank (`recompi_rank`)
+## 9. Recommendation Rank (`recompi_rank`)
 
 The `recompi_rank` field indicates the recommendation rank for each output. This field can be included or excluded from the results.
 
@@ -346,7 +471,7 @@ results = MyModel.recompi_recommend(
 
 ---
 
-## 9. Query Manager and QuerySet
+## 10. Query Manager and QuerySet
 
 ### Query Manager
 
@@ -374,7 +499,7 @@ results = MyModel.recompi_recommend(
 
 ---
 
-## 10. Polling Size (`max_polling_size`) vs. Size (`size`)
+## 11. Polling Size (`max_polling_size`) vs. Size (`size`)
 
 ### `max_polling_size`
 
@@ -405,7 +530,7 @@ By understanding and utilizing these parameters effectively, you can optimize da
 
 ---
 
-## 11. Returning the Response (`return_response`)
+## 12. Returning the Response (`return_response`)
 
 The `return_response` parameter can be used for debugging purposes, providing the raw response from the RecomPI API.
 
@@ -419,7 +544,7 @@ results, response = MyModel.recompi_recommend(
 
 ---
 
-## 12. RecomPILabels
+## 13. RecomPILabels
 
 The `RecomPILabels` class provides predefined labels for tracking various interactions using RecomPI within your Django application. While these labels are provided for convenience, developers are not restricted to using only these predefined labels and can add custom labels as needed.
 
@@ -467,7 +592,7 @@ By using `RecomPILabels`, you can leverage predefined labels or introduce custom
 
 ---
 
-## 13. Error Handling and Exceptions
+## 14. Error Handling and Exceptions
 
 When using *Django RecomPI*, you may encounter the following exceptions:
 
@@ -475,7 +600,7 @@ When using *Django RecomPI*, you may encounter the following exceptions:
 
 ---
 
-## 14. Performance Considerations
+## 15. Performance Considerations
 
 To optimize performance with *Django RecomPI*:
 

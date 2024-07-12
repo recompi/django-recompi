@@ -19,18 +19,27 @@ pip install django-recompi
 1. **Define your Django model** (e.g., `Product`) and use `RecomPIModelMixin` as a mixin.
 
 ```python
+from typing import List
 from django.db import models
 from django_recompi.models import RecomPIModelMixin
 
 class Product(models.Model, RecomPIModelMixin):
     RECOMPI_DATA_FIELDS = [
-        "name",
-        "reviews__comment",
-        "reviews__rating",
-        "reviews__counter.count",
+        "name", # current model's field
+        "reviews__comment", # join operation
+        "reviews__counter.count", # join and `dot` operations
+        "callable_method_single_return", # callable method with signle return
+        "callable_method_list_return", # callable method with list return
+        "reviews__counter.callable_method", # join and method-call operations
     ]
     name = models.CharField(max_length=100, db_index=True)
     description = models.TextField()
+
+    def callable_method_single_return(self) -> str:
+        return "a-value"
+
+    def callable_method_list_return(self) -> List[str]:
+        return ["list", "of", "values"]
 
     def __str__(self):
         return self.name
@@ -125,6 +134,89 @@ product.recompi_search_track(
 
 For more detailed information, check out our [advanced documentation](https://github.com/recompi/django-recompi/blob/develop/docs/advanced.md#6-search-methods-in-recompimodelmixin). You can also learn how to pre-train RecomPI's A.I. to boost results from day one with a single script [here](https://github.com/recompi/django-recompi/blob/develop/docs/advanced.md#pre-train-data-for-optimal-search-engine-performance).
 
+### Examples and Use Cases
+
+Explore these examples to understand how *Django RecomPI* can be applied:
+
+- **E-commerce Recommendation**: Track user interactions on product pages and recommend related products based on their behavior.
+- **Content Personalization**: Customize content recommendations based on user preferences and historical interactions.
+
+---
+
+## Linking two objects with each other using recommendation system
+
+Linking two models requires additional data fields to create a `SecureProfile` instance. By default, the package uses the primary key (`pk`) as the profile ID. However, in scenarios where linking models based on a series of fields is necessary—such as suggesting products based on client attributes like gender, age, and tourist status—using `pk` as the profile ID may not be suitable. For instance, if a user is a one-time visitor unlikely to return soon, a more tailored approach is needed.
+
+### Example: Customizing `Client` Profile Fields
+
+```python
+class Client(AbstractUser, RecomPIModelMixin):
+    RECOMPI_PROFILE_ID = [
+        "gender",
+        "age",
+        "if_tourist",
+        # Add more relevant fields as needed
+    ]
+```
+
+### Recommending Products to Clients
+
+To recommend products to a given `Client`, use the following example:
+
+```python
+client = Client.objects.get(**criteria)
+recommended_products = client.recompi_recommend_links(
+    model_class=Product,
+    labels=["buy", "interested"]
+)
+
+for label, products in recommended_products.items():
+    for product in products:
+        print("Recommend Product #{} for '{}'".format(product.pk, label))
+```
+
+### Linking Client Interests to Products
+
+After gathering client information and observing their interactions, link clients to products:
+
+```python
+products_bought = Product.objects.filter(pk__in=BOUGHT_PRODUCT_IDS)
+products_of_interest = Product.objects.filter(pk__in=INTERESTED_PRODUCT_IDS)
+
+for product in products_bought:
+    client.recompi_link(
+        instance=product,
+        label="buy",
+        location="https://www.example.com/product/{}".format(product.pk),
+    )
+
+for product in products_of_interest:
+    client.recompi_link(
+        instance=product,
+        label="interested",
+        location="https://www.example.com/product/{}".format(product.pk),
+    )
+```
+
+This example can be extended to any scenario where you need to establish links between two models and receive recommended objects in return.
+
+### Benefits of Linked Objects Using RecomPI
+
+- **Enhanced Personalization:** Tailor recommendations based on user interactions.
+- **Improved Engagement:** Guide users through related items for increased interaction.
+- **Behavioral Insights:** Understand user preferences to refine recommendations.
+- **Optimized Search:** Deliver precise search results by understanding item relationships.
+- **Accelerated Learning:** Quickly optimize recommendations by pre-training with linked objects.
+- **Detailed Analytics:** Analyze user interactions to inform decision-making and strategy.
+
+### Example Use Cases
+
+1. **E-commerce:** Enhance product discovery with complementary item recommendations.
+2. **Content Platforms:** Keep users engaged with relevant articles or videos based on interests.
+3. **Social Networks:** Foster community engagement by suggesting connections based on shared interests.
+
+For advanced features and more detailed information, refer to our [advanced documentation](https://github.com/recompi/django-recompi/blob/develop/docs/advanced.md#6-search-methods-in-recompimodelmixin).
+
 ---
 
 ## Settings Configuration
@@ -146,15 +238,6 @@ Ensure the following security best practices when using *Django RecomPI*:
 - **Secure API Key Handling**: Keep `RECOMPI_API_KEY` secure and avoid exposing it in version control or public repositories.
 - **Data Encryption**: Use HTTPS (`RECOMPI_SECURE_API`) to encrypt data transmitted between your Django application and the RecomPI service.
 - **Secure Profile Hashing**: Utilize `RECOMPI_SECURE_HASH_SALT` to hash profile IDs and other data obscuring before sending them to RecomPI servers. This helps protect user data by obscuring identifiable information during transmission and afterward.
-
----
-
-## Examples and Use Cases
-
-Explore these examples to understand how *Django RecomPI* can be applied:
-
-- **E-commerce Recommendation**: Track user interactions on product pages and recommend related products based on their behavior.
-- **Content Personalization**: Customize content recommendations based on user preferences and historical interactions.
 
 ---
 
