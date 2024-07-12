@@ -215,7 +215,7 @@ This example can be extended to any scenario where you need to establish links b
 2. **Content Platforms:** Keep users engaged with relevant articles or videos based on interests.
 3. **Social Networks:** Foster community engagement by suggesting connections based on shared interests.
 
-For advanced features and more detailed information, refer to our [advanced documentation](https://github.com/recompi/django-recompi/blob/develop/docs/advanced.md#6-search-methods-in-recompimodelmixin).
+For advanced features and more detailed information, refer to our [advanced documentation](https://github.com/recompi/django-recompi/blob/develop/docs/advanced.md#7-linking-two-records-from-two-different-models).
 
 ---
 
