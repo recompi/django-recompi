@@ -98,6 +98,27 @@ print(
 )
 ```
 
+### RecomPI as a Recommendation-Based Search Engine
+
+The `django-recompi` package provides a fast, reliable, and secure recommendation-based search engine.
+
+#### Perform a Search
+```python
+results = Product.recompi_search("awesome product", "product-view")
+```
+
+#### Track a Click
+```python
+product = Product.objects.get(pk=1395)
+product.recompi_search_track(
+    "awesome product",
+    Location(url="https://www.example.com/search-page"),
+    "product-view"
+)
+```
+
+For more detailed information, check out our [advanced documentation](https://github.com/recompi/django-recompi/blob/develop/docs/advanced.md#6-search-methods-in-recompimodelmixin). You can also learn how to pre-train RecomPI's A.I. to boost results from day one with a single script [here](https://github.com/recompi/django-recompi/blob/develop/docs/advanced.md#pre-train-data-for-optimal-search-engine-performance).
+
 ## Settings Configuration
 
 *Django RecomPI* can be customized through the following settings in your `settings.py` file, you can read the full documentation [here](https://github.com/recompi/django-recompi/blob/main/docs/settings.md); but the most important settings you **much set** in your `settings.py` is `RECOMPI_API_KEY`:
