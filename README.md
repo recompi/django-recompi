@@ -10,6 +10,8 @@ You can install *Django RecomPI* via pip. Here's how:
 pip install django-recompi
 ```
 
+---
+
 ## Quick Start
 
 ### Setting up a Django model with RecomPI integration
@@ -97,17 +99,18 @@ print(
     }
 )
 ```
+---
 
-### RecomPI as a Recommendation-Based Search Engine
+## RecomPI as a Recommendation-Based Search Engine
 
 The `django-recompi` package provides a fast, reliable, and secure recommendation-based search engine.
 
-#### Perform a Search
+### Perform a Search
 ```python
 results = Product.recompi_search("awesome product", "product-view")
 ```
 
-#### Track a Click
+### Track a Click
 ```python
 product = Product.objects.get(pk=1395)
 product.recompi_search_track(
@@ -119,6 +122,8 @@ product.recompi_search_track(
 
 For more detailed information, check out our [advanced documentation](https://github.com/recompi/django-recompi/blob/develop/docs/advanced.md#6-search-methods-in-recompimodelmixin). You can also learn how to pre-train RecomPI's A.I. to boost results from day one with a single script [here](https://github.com/recompi/django-recompi/blob/develop/docs/advanced.md#pre-train-data-for-optimal-search-engine-performance).
 
+---
+
 ## Settings Configuration
 
 *Django RecomPI* can be customized through the following settings in your `settings.py` file, you can read the full documentation [here](https://github.com/recompi/django-recompi/blob/main/docs/settings.md); but the most important settings you **much set** in your `settings.py` is `RECOMPI_API_KEY`:
@@ -129,6 +134,8 @@ For more detailed information, check out our [advanced documentation](https://gi
 - **Description:** API key for accessing the RecomPI service. Required for integration.
 - **Note:** To obtain `RECOMPI_API_KEY`, register on the [RecomPI panel](https://panel.recompi.com/clients/sign_in). After registration, [add a campaign](https://panel.recompi.com/campaigns/new) in the panel, and a campaign token will be generated instantly. Use this token as your API key in the code.
 
+---
+
 ## Security Considerations
 
 Ensure the following security best practices when using *Django RecomPI*:
@@ -137,6 +144,8 @@ Ensure the following security best practices when using *Django RecomPI*:
 - **Data Encryption**: Use HTTPS (`RECOMPI_SECURE_API`) to encrypt data transmitted between your Django application and the RecomPI service.
 - **Secure Profile Hashing**: Utilize `RECOMPI_SECURE_HASH_SALT` to hash profile IDs and other data obscuring before sending them to RecomPI servers. This helps protect user data by obscuring identifiable information during transmission and afterward.
 
+---
+
 ## Examples and Use Cases
 
 Explore these examples to understand how *Django RecomPI* can be applied:
@@ -144,9 +153,13 @@ Explore these examples to understand how *Django RecomPI* can be applied:
 - **E-commerce Recommendation**: Track user interactions on product pages and recommend related products based on their behavior.
 - **Content Personalization**: Customize content recommendations based on user preferences and historical interactions.
 
+---
+
 ## In-Depth Guide
 
 Explore our in-depth guide to uncover advanced topics and features of the `django-recompi` package. This section provides essential insights for developing sophisticated recommendation systems using RecomPI. For detailed information, visit the [Advanced Documentation](https://github.com/recompi/django-recompi/blob/main/docs/advanced.md).
+
+---
 
 ## Basic Usage
 
