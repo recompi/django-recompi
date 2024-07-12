@@ -107,16 +107,19 @@ The `django-recompi` package provides a fast, reliable, and secure recommendatio
 
 ### Perform a Search
 ```python
-results = Product.recompi_search("awesome product", "product-view")
+results = Product.recompi_search(
+    query="awesome product",
+    labels="product-view"
+)
 ```
 
 ### Track a Click
 ```python
 product = Product.objects.get(pk=1395)
 product.recompi_search_track(
-    "awesome product",
-    Location(url="https://www.example.com/search-page"),
-    "product-view"
+    query="awesome product",
+    location=Location(url="https://www.example.com/search-page"),
+    labels="product-view"
 )
 ```
 

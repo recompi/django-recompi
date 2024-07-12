@@ -256,14 +256,17 @@ class Product(models.Model, RecomPIModelMixin):
     }
 
 # Example usage:
-results = Product.recompi_search("awesome product", "product-view")
+results = Product.recompi_search(
+    query="awesome product",
+    labels="product-view"
+)
 
 # For example user clicked on the product# 1395 afterward
 product: Product = Product.objects.get(pk=1395)
 product.recompi_search_track(
-    "awesome product",
-    Location(url="https://www.example.com/search-page"),
-    "product-view"
+    query="awesome product",
+    location=Location(url="https://www.example.com/search-page"),
+    labels="product-view"
 )
 ```
 

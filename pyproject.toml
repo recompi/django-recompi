@@ -1,6 +1,6 @@
 [project]
 name = "django-recompi"
-version = "2.1.8"
+version = "2.1.9"
 description = "Integration of RecomPI with Django models for recommendation and tracking functionalities."
 readme = "README.md"
 authors = [{ name = "RecomPI", email = "tech@recompi.com" }]
