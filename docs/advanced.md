@@ -271,29 +271,34 @@ product.recompi_search_track(
 
 To enhance RecomPI's A.I. understanding of your system and user queries, you can pre-train it with historical search data. While RecomPI will learn and optimize over time, pre-training can significantly speed up this process, reducing the optimization phase from weeks or months to just days or weeks. This involves sending historical search data or generating related queries and linking them to items in your database.
 
-> Note: Each item in your database can be linked to multiple queries.
+> **Note:** Each item in your database can be linked to multiple queries.
 
 #### Example of Pre-training RecomPI's A.I. on Search
 
 ```python
-def generate_queries_for(product: Product) -> List[str]:
-    # Simple query generation algorithm
-    example_queries = [product.title]
+def generate_queries_for(product: Product, chunk_size: int = 4) -> List[str]:
+    # a tokenizer method
+    def query_builder(string: str, chunk_size: int = 4) -> List[str]:
+        queries = []
+        title_tokens = string.split()
+        for i in range(0, len(title_tokens) - chunk_size + 1):
+            queries.append(" ".join(title_tokens[i : i + chunk_size]))
 
-    CHUNK_SIZE = 4
-    title_tokens = product.title.split()
-    for i in range(0, len(title_tokens), CHUNK_SIZE):
-        example_queries.append(" ".join(title_tokens[i:i + CHUNK_SIZE]))
+        return queries
 
     # Add more sophisticated query generation as needed
-    return example_queries
+
+    return query_builder(product.title, chunk_size) + query_builder(
+        product.description, chunk_size
+    )
+
 
 for product in Product.objects.all():
-    for query in generate_queries_for(product):
+    for query in generate_queries_for(product, chunk_size=4):
         product.recompi_search_track(
             query=query,
             location=Location(url="https://www.example.com/search-page"),
-            labels="product-view"
+            labels="product-view",
         )
 ```
 
